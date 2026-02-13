@@ -1,22 +1,21 @@
-# ==================================================
-# Validation Accuracy: 0.9116 with custom_weights in LR , SVM & final
-# custom_weights = {0: 1, 1: 2.0, 2: 1.2, 3: 5.0}
-# Kaggle score :0.81315
 
-# ==================================================
+Validation Accuracy: 0.9116 with custom_weights in LR , SVM & final
+custom_weights = {0: 1, 1: 2.0, 2: 1.2, 3: 5.0}
+Kaggle score :0.81315
+
+==================================================
     
 
-# Classification Report:
-#               precision    recall  f1-score   support
-
-#            0       0.98      0.94      0.96     22835
-#            1       0.78      0.77      0.78      3183
-#            2       0.87      0.90      0.89     12488
-#            3       0.53      0.75      0.62      1094
-
-#     accuracy                           0.91     39600
-#    macro avg       0.79      0.84      0.81     39600
-# weighted avg       0.92      0.91      0.91     39600
+Classification Report:
+  |        class     |precision   | recall  |f1-score |  support |
+  |--------|-----|------|-----|-----|
+  |   0    |   0.98  |    0.94    |  0.96 |    22835|
+  |  1     |  0.78   |   0.77  |    0.78  |    3183|
+  | 2      | 0.87    |  0.90   |   0.89   |  12488|
+  |3       |0.53     | 0.75    |  0.62    |  1094|
+  |accuracy||                          | 0.91   |  39600|
+  |macro avg     |  0.79  |    0.84   |   0.81  |   39600|
+  |weighted avg      | 0.92 |     0.91    |  0.91   |  39600|
 
 
 Excellent! Your class weighting helped **significantly** with Class 3. Let me analyze the improvements and suggest next steps:
