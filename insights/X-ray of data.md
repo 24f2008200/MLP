@@ -99,4 +99,72 @@ Class 3 comments are notably shorter than others. This could mean:
 8. ✅ Keep char_len and word_len as features — Class 3 is clearly shorter
 ```
 
+
+
+Great questions, let me break it all down:
+
+---
+
+**What SMOTETomek does — it's two steps combined:**
+
+**Step 1 — SMOTE (over-sampling):** Creates synthetic samples for the minority classes by interpolating between existing samples. So class 3 goes from 5k → 15k by generating 10k *new synthetic* data points.
+
+**Step 2 — Tomek Links (under-sampling/cleaning):** Finds pairs of samples from different classes that are very close to each other (borderline/ambiguous points) and removes them. These are the "cross-border" samples causing confusion.
+
+```
+Before SMOTETomek:
+Class 0: 114k  ████████████████████████
+Class 2:  62k  █████████████
+Class 1:  15k  ███
+Class 3:   5k  █
+
+After SMOTETomek:
+Class 0: ~110k  ████████████████████████  (slightly reduced — Tomek removed border noise)
+Class 2:  ~60k  █████████████             (slightly reduced)
+Class 1:  ~30k  ██████                    (SMOTE added synthetic samples)
+Class 3:  ~15k  ███                       (SMOTE added synthetic samples)
+```
+
+---
+
+**Yes, you train on X_res:**
+
+```python
+# Full workflow
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
+
+# Apply SMOTETomek ONLY on training data — never touch test set
+smt = SMOTETomek(sampling_strategy=sampling_strategy, random_state=42)
+X_res, y_res = smt.fit_resample(X_train, y_train)
+
+# Train on resampled data
+model.fit(X_res, y_res)
+
+# Evaluate on original untouched test set
+model.predict(X_test)
+```
+
+⚠️ **Never apply SMOTE to your test set** — the test set must reflect real-world distribution.
+
+---
+
+**Does the training data get reduced?**
+
+Yes slightly, but it's a net gain. The Tomek step removes a small number of ambiguous border points from class 0 and 2, but you're gaining far more from SMOTE on classes 1 and 3:
+
+```
+Net effect on training data:
+- Class 0:  loses ~few hundred border points   → slight reduction
+- Class 2:  loses ~few hundred border points   → slight reduction  
+- Class 1:  gains ~15k synthetic points        → doubles
+- Class 3:  gains ~10k synthetic points        → triples
+
+Overall: dataset grows, not shrinks
+```
+
+The reduction from Tomek is actually **desirable** — those removed points were sitting right on the class boundary and were confusing the model. Removing them gives cleaner decision boundaries.
+
+
+
+
 Share the t-SNE plot when it finishes — that will be the deciding factor on whether TF-IDF features are good enough or you need embeddings.
