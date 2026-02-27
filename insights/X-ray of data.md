@@ -165,6 +165,74 @@ Overall: dataset grows, not shrinks
 The reduction from Tomek is actually **desirable** — those removed points were sitting right on the class boundary and were confusing the model. Removing them gives cleaner decision boundaries.
 
 
+**First — the save fix for future plots:**
+
+```python
+plt.figure(figsize=(10, 7))
+for cls in df[TARGET].unique():
+    idx = df[TARGET] == cls
+    plt.scatter(X_2d[idx, 0], X_2d[idx, 1], label=f"Class {cls}", alpha=0.5, s=15)
+
+plt.title("t-SNE of TF-IDF Features — Class Separation")
+plt.legend()
+plt.tight_layout()
+plt.savefig("tsne_tfidf.png", dpi=150, bbox_inches="tight")  # ← add this before show()
+plt.show()
+```
+
+---
+
+**Now — what this t-SNE is telling you, and it's not good news for TF-IDF:**
+
+This is a **severe cross-border situation.** Here's what you're seeing:
+
+- **Class 0 (orange)** dominates and bleeds into everything — no isolated cluster at all
+- **Class 1 (green) and Class 3 (red)** are completely buried inside the orange mass — no separation whatsoever
+- **Class 2 (blue)** has a slight tendency to sit on the outer edges but still heavily mixed
+
+There are **no clean clusters anywhere**. This means TF-IDF is failing to capture the semantic meaning that separates these classes. Words alone without context aren't enough.
+
+**SMOTE on TF-IDF features won't save you here** — you can't synthetically balance data that the model can't separate in the first place. The problem is the *representation*, not the *balance*.
+
+---
+
+**You need to move to sentence embeddings:**
+
+```python
+from sentence_transformers import SentenceTransformer
+
+model = SentenceTransformer('all-MiniLM-L6-v2')  # fast and good
+embeddings = model.encode(df["cleaned"].tolist(), 
+                           batch_size=64, 
+                           show_progress_bar=True)
+
+# Then redo t-SNE on embeddings instead of TF-IDF
+tsne = TSNE(n_components=2, random_state=42, perplexity=30)
+X_2d = tsne.fit_transform(embeddings)
+```
+
+`all-MiniLM-L6-v2` understands *context and meaning*, not just word frequency — so "I hate you" and "I despise you" will land close together in the embedding space even though they share no words.
+
+---
+
+**Revised game plan given this result:**
+
+```
+❌ TF-IDF alone          → proved insufficient by t-SNE
+✅ Sentence embeddings   → upgrade to this immediately
+✅ SMOTETomek            → still apply, but AFTER getting better embeddings
+✅ class_weight          → use as safety net alongside SMOTE
+⚠️  SMOTE on TF-IDF     → skip this, would be wasted effort
+```
+
+Run the embedding version and share that t-SNE — if the clusters separate better there, you're on the right track.
+
+
+<img width="1485" height="1032" alt="tsne_tfidf" src="https://github.com/user-attachments/assets/551f1091-62b2-44c0-8d0a-b4992b379e0d" />
+
+
+
+
 
 
 Share the t-SNE plot when it finishes — that will be the deciding factor on whether TF-IDF features are good enough or you need embeddings.
